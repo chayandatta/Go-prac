@@ -135,3 +135,13 @@ Problem no #12: 5+2 =
 7
 You have scored 12 out of 12
 ```
+
+```
+❯ go build . && go run main.go -csv="problems.csv" -limit=2
+Problem no #1: 5+5 = 
+10
+Problem no #2: 1+1 = 
+2
+Time is over!!
+You have scored 2 out of 12 
+```

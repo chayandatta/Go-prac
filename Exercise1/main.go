@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
 	// Package flag implements command-line flag parsing.
 	csvFileName := flag.String("csv", "problems.csv", "read the csv for question & answers")
+	timeLimit := flag.Int("limit", 30, "Time limit for the quiz in seconds")
 	flag.Parse()
 
 	// csvFileName will be the pointer to the string
@@ -26,16 +28,40 @@ func main() {
 	}
 	problems := parseLines(lines)
 
+	timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
+
+	// at this point the code will be blocked till we get a response from channel
+	// <-timer.C
+
 	correct := 0
+
+problemLoop:
 	for i, p := range problems {
 		fmt.Printf("Problem no #%d: %s = \n", i+1, p.ques)
-		var answer string
-		fmt.Scanf("%s\n", &answer)
-		if answer == p.ans {
-			correct++
+		// answer channel
+		ansCh := make(chan string)
+
+		// let's define a goroutine
+		go func() {
+			var answer string
+			fmt.Scanf("%s\n", &answer)
+			// closure
+			// whenever we get an answer we send that to the ansCh channel
+			ansCh <- answer //we're sending the answer to ansCh <- see the arrow
+		}()
+
+		select {
+		// here if we get a resp from channel, we stop the quiz
+		case <-timer.C:
+			fmt.Println("\nTime is over!!")
+			break problemLoop
+		case answer := <-ansCh:
+			if answer == p.ans {
+				correct++
+			}
 		}
 	}
-	fmt.Printf("You have scored %d out of %d \n", correct, len(problems))
+	fmt.Printf("\nYou have scored %d out of %d \n", correct, len(problems))
 }
 
 func parseLines(lines [][]string) []problem {
